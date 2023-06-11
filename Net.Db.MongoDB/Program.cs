@@ -112,6 +112,29 @@ var TestCollection = testdb.GetCollection<Entity>("TestCollection");
         TestCollection.InsertOne(e);
     }
     print("Perfomance.InsertOne.End");
+    print($"TestCollection.Count : {TestCollection.CountDocuments(x => true)}");
+
+    print("Perfomance.InsertMany");
+
+    List<Entity> forInsert = new();
+    for (int i = 0; i < 50000; i++)
+    {
+        var e = new Entity()
+        {
+            Id = Guid.NewGuid(),
+            CreatedAt = DateTime.Now,
+            EditedAt = DateTime.Now,
+
+            Name = $"Name_{i}",
+            Description = "Description",
+
+            Value = i * 100,
+        };
+        forInsert.Add(e);
+    }
+    TestCollection.InsertMany(forInsert);
+    print("Perfomance.InsertMany.End");
+    print($"TestCollection.Count : {TestCollection.CountDocuments(x => true)}");
 
     print("Perfomance.GetAll");
     var all = TestCollection.Find<Entity>(x => true).ToList();
