@@ -1,5 +1,4 @@
 //Host.CreateDefaultBuilder(args).ConfigureServices(services => services.AddHostedService<Worker>()).Build().Run();
-using MongoDB.Bson;
 using MongoDB.Driver;
 using MoreLinq;
 using Net.Db.MongoDB;
@@ -7,142 +6,46 @@ using Net.Db.MongoDB;
 
 var dbClient = new MongoClient("mongodb://127.0.0.1:27017");
 var dbList = dbClient.ListDatabases().ToList();
-print($"dbList : {dbList.Count}", $"{dbList.ToDelimitedString("\n")}");
+//print($"dbList : {dbList.Count}", $"{dbList.ToDelimitedString("\n")}");
 
 
 IMongoDatabase testdb = dbClient.GetDatabase("testdb");
-//testdb.CreateCollection("TestCollection");
 var TestCollection = testdb.GetCollection<Entity>("TestCollection");
+//Tests.PerfomanceInsertOne(TestCollection);
+
+Tests.PerfomanceInsertMany(TestCollection, 1000000);
 
 
-{
-    print("", $"InsertOne");
-    print($"TestCollection : {TestCollection.CountDocuments(x => true)}");
+/*
+Tests.PerfomanceInsertMany(TestCollection, 1000000);
 
-    var entity = new Entity()
-    {
-        Id = Guid.NewGuid(),
-        CreatedAt = DateTime.Now,
-        EditedAt = DateTime.Now,
+---10.000
+[[2023.09.23 10:16.17.360]]Perfomance.InsertMany(-0,16)
+[[2023.09.23 10:16.17.693]]Perfomance.InsertMany.End(324,21)
+[[2023.09.23 10:16.17.717]]TestCollection.Count : 10000(24,81)
+[[2023.09.23 10:16.17.718]]Perfomance.GetAll(0,46)
+[[2023.09.23 10:16.17.831]]Perfomance.GetAll.End(113,47)
+[[2023.09.23 10:16.17.832]]Perfomance.InsertOne.DeleteMany(0,48)
+[[2023.09.23 10:16.18.000]]Perfomance.InsertOne.DeleteMany.End(167,76)
 
-        Name = "Name",
-        Description = "Description",
-        Value = 100,
-    };
+---100.000
+[[2023.09.23 10:16.50.056]]Perfomance.InsertMany(-0,17)
+[[2023.09.23 10:16.51.414]]Perfomance.InsertMany.End(1349,16)
+[[2023.09.23 10:16.51.463]]TestCollection.Count : 100000(49,03)
+[[2023.09.23 10:16.51.464]]Perfomance.GetAll(0,47)
+[[2023.09.23 10:16.51.964]]Perfomance.GetAll.End(500,58)
+[[2023.09.23 10:16.51.965]]Perfomance.InsertOne.DeleteMany(0,5)
+[[2023.09.23 10:16.52.940]]Perfomance.InsertOne.DeleteMany.End(975,37)
 
-    TestCollection.InsertOne(entity);
-    print($"TestCollection : {TestCollection.CountDocuments(x => true)}");
-    var e = TestCollection.Find<Entity>(x => x.Id == entity.Id).FirstOrDefault()?.ToJson();
-    print(e);
-    TestCollection.DeleteOne(x => x.Id == entity.Id);
-    print($"TestCollection : {TestCollection.CountDocuments(x => true)}");
-
-
-    TestCollection.InsertOne(entity);
-
-    var eForUpdate = TestCollection.AsQueryable().FirstOrDefault(x => x.Id == entity.Id);
-    print(eForUpdate.ToJson());
-
-    var update = Builders<Entity>.Update.Set(x => x.Name, eForUpdate.Name + "____UPDATED");
-    TestCollection.UpdateOne(x => x.Id == entity.Id, update);
-    var eUpdated = TestCollection.FindOneAndDelete(x => x.Id == entity.Id);
-    print(eUpdated.ToJson());
-
-
-}
-
-
-{
-    print("", $"InsertMany");
-    print($"TestCollection : {TestCollection.CountDocuments(x => true)}");
-
-    List<Entity> forInsert = new();
-    for (int i = 0; i < 10; i++)
-    {
-        var e = new Entity()
-        {
-            Id = Guid.NewGuid(),
-            CreatedAt = DateTime.Now,
-            EditedAt = DateTime.Now,
-
-            Name = $"Name_{i}",
-            Description = "Description",
-
-            Value = i*100,
-        };
-        forInsert.Add(e);
-    }
-
-    
-    TestCollection.InsertMany(forInsert);
-    print($"TestCollection : {TestCollection.CountDocuments(x => true)}");
-
-    TestCollection.Find<Entity>(x => true)
-        .Skip(0)
-        .Limit(3)
-        .ToList()
-        .ForEach(x => print(x.ToJson()));
-
-
-    TestCollection.DeleteMany(x => true);
-    print($"TestCollection : {TestCollection.CountDocuments(x => true)}");
-
-
-}
+---1000.000
+[[2023.09.23 10:18.03.186]]Perfomance.InsertMany(-0,12)
+[[2023.09.23 10:18.12.862]]Perfomance.InsertMany.End(9667,36)
+[[2023.09.23 10:18.13.147]]TestCollection.Count : 1000000(285,29)
+[[2023.09.23 10:18.13.148]]Perfomance.GetAll(0,47)
+[[2023.09.23 10:18.16.762]]Perfomance.GetAll.End(3614,67)
+[[2023.09.23 10:18.16.763]]Perfomance.InsertOne.DeleteMany(0,44)
+[[2023.09.23 10:18.27.077]]Perfomance.InsertOne.DeleteMany.End(10314,14)
 
 
 
-{
-    print();
-    print("Perfomance.InsertOne");
-
-    for (int i = 0; i < 10000; i++)
-    {
-        var e = new Entity()
-        {
-            Id = Guid.NewGuid(),
-            CreatedAt = DateTime.Now,
-            EditedAt = DateTime.Now,
-
-            Name = $"Name_{i}",
-            Description = "Description",
-
-            Value = i,
-        };
-        TestCollection.InsertOne(e);
-    }
-    print("Perfomance.InsertOne.End");
-    print($"TestCollection.Count : {TestCollection.CountDocuments(x => true)}");
-
-    print("Perfomance.InsertMany");
-
-    List<Entity> forInsert = new();
-    for (int i = 0; i < 50000; i++)
-    {
-        var e = new Entity()
-        {
-            Id = Guid.NewGuid(),
-            CreatedAt = DateTime.Now,
-            EditedAt = DateTime.Now,
-
-            Name = $"Name_{i}",
-            Description = "Description",
-
-            Value = i * 100,
-        };
-        forInsert.Add(e);
-    }
-    TestCollection.InsertMany(forInsert);
-    print("Perfomance.InsertMany.End");
-    print($"TestCollection.Count : {TestCollection.CountDocuments(x => true)}");
-
-    print("Perfomance.GetAll");
-    var all = TestCollection.Find<Entity>(x => true).ToList();
-    print("Perfomance.GetAll.End");
-
-    print("Perfomance.InsertOne.DeleteMany");
-    TestCollection.DeleteMany(x => true);
-    print("Perfomance.InsertOne.DeleteMany.End");
-}
-
-
+*/
